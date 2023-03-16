@@ -26,7 +26,9 @@
        (doto f
          (.dispose)
          (.setUndecorated true)
-         (.setVisible true))
+         (.setVisible true)
+         (.toFront)
+         (.requestFocus))
        (.setFullScreenWindow gd f))
       (do
        (.setFullScreenWindow gd nil)
@@ -37,18 +39,33 @@
          (.setVisible true)
          (.repaint))))))
 
+(defn- close!
+  [f]
+  (.setVisible f false)
+  (.dispose f))
+
+(defn- listen-key!
+  [f h]
+  (.addKeyListener
+   f
+   (reify KeyListener
+     (keyPressed [this e] (h (.getKeyCode e) e))
+     (keyReleased [this e])
+     (keyTyped [this e]))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
   (println "Hello, World!"))
 
 (comment
- (look-and-feel!) 
+ (look-and-feel!)
  (alert! "hey")
  (let [
        f (new JFrame)
        ; _ (.setDefaultCloseOperation f JFrame/EXIT_ON_CLOSE)
        _ (.setSize f 300 200)
+       _ (.setLocationRelativeTo f nil)
        _ (.addKeyListener
           f
           (reify KeyListener
@@ -106,26 +123,20 @@
        _ (.setConstraints gbl l gbc)
        _ (.add p l)
        _ (.add (.getContentPane f) p)
-       _ (full-screen! f true) #_(.setVisible f true)
+       _ #_(full-screen! f true) (.setVisible f true)
        ]
    )
- (let [ge (GraphicsEnvironment/getLocalGraphicsEnvironment)
-       gd (.getDefaultScreenDevice ge)
-       f (new JFrame)
-       _ (.setSize f 300 200)
-       _ (.setUndecorated f true)
-       _ (.setFullScreenWindow gd f)
-       _  (.addKeyListener
-           f
-           (reify KeyListener
-             (keyPressed [this e]
-               (when (= (.getKeyCode e) KeyEvent/VK_ESCAPE)
-                 (.setFullScreenWindow gd nil)
-                 (.setUndecorated f false)))
-             (keyReleased [this e])
-             (keyTyped [this e])))
-       _ (.setVisible f true)
-       l (new JLabel)]
+ (let [f (doto (new JFrame)
+           (.setSize 300 200)
+           (.setLocationRelativeTo nil))
+       _ (listen-key! f (fn [c e]
+                          (when (= c KeyEvent/VK_ESCAPE)
+                            #_(alert! "Closing!")
+                            #_(close! f)
+                            #_(System/exit 0)
+                            (full-screen! f false))))
+       _ (full-screen! f true)
+       ]
    )
  ; (.addActionListener my-button
  ;                         (reify ActionListener
