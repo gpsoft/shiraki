@@ -109,7 +109,7 @@
     (listen-key! fr (fn [c e]
                        (when (= c KeyEvent/VK_ESCAPE)
                          (close! fr)) ))
-    (listen-resize! fr (fn [e] (println "resized")))
+    (listen-resize! fr (fn [e] #_(println "resized")))
     fr))
 
 (defn- main-container!
@@ -140,7 +140,7 @@
 (defn- image-file?
   [file]
   (and (.isFile file)
-       (re-matches #".*jpg$" (.getName file))))
+       (re-matches #"(?i).*jpg$" (.getName file))))
 
 (defn- all-images
   [path-str]
