@@ -3,11 +3,12 @@
    [shiraki.exif :as exif]
    [shiraki.player :as player])
   (:import
-   [java.awt GraphicsDevice GraphicsEnvironment Image Font Color]
+   [java.awt GraphicsDevice GraphicsEnvironment Font Color]
    [java.awt GridBagConstraints GridBagLayout Insets]
    [java.awt.event KeyListener KeyEvent ComponentListener ComponentEvent]
    [java.awt.event ActionListener ActionEvent]
-   [javax.swing UIManager JOptionPane JFrame JLabel ImageIcon]
+   [java.awt.event WindowAdapter WindowEvent]
+   [javax.swing UIManager JOptionPane JFrame JLabel]
    [javax.swing JPanel SwingConstants])
   (:gen-class))
 
@@ -35,23 +36,26 @@
        (doto compo
          (.dispose)
          (.setUndecorated true)
-         (.setVisible true)
+         (.setVisible true))
+       (.setFullScreenWindow gd compo)
+       (doto compo    ;; mac: should be AFTER maximize
          (.toFront)
-         (.requestFocus))
-       (.setFullScreenWindow gd compo))
+         (.requestFocus)))
       (do
        (.setFullScreenWindow gd nil)
        (doto compo
          (.dispose)
          (.setUndecorated false)
-         ;; FIX: restore window size?
+         ;; FIX: linux: restore window size?
          (.setVisible true)
          (.repaint))))))
 
 (defn- close!
   [compo]
-  (.setVisible compo false)
-  (.dispose compo))
+  (.dispatchEvent compo
+                  (new WindowEvent compo WindowEvent/WINDOW_CLOSING))
+  #_(.setVisible compo false)
+  #_(.dispose compo))
 
 (defn- listen-key!
   [compo h]
@@ -73,6 +77,14 @@
      (componentHidden [this e])
      (componentMoved [this e])
      (componentShown [this e]))))
+
+(defn- listen-closing!
+  [compo h]
+  (.addWindowListener
+   compo
+   (proxy [WindowAdapter] []
+     (windowClosing [e]
+       (h)))))
 
 (defn- listen-action!
   [compo h]
@@ -102,13 +114,21 @@
      (.setConstraints layout compo gbc))))
 
 (defn- main-window!
-  [w h]
+  [w h exit-on-close?]
   (let [fr (doto (new JFrame)
-            (.setSize w h)
-            (.setLocationRelativeTo nil))]
+             (.setSize w h)
+             (.setLocationRelativeTo nil)
+             (.setDefaultCloseOperation
+              (if exit-on-close?
+                JFrame/EXIT_ON_CLOSE
+                JFrame/DISPOSE_ON_CLOSE)))]
     (listen-key! fr (fn [c e]
-                       (when (= c KeyEvent/VK_ESCAPE)
-                         (close! fr)) ))
+                      (when (= c KeyEvent/VK_ESCAPE)
+                        #_(full-screen! fr false)
+                        ;; close main window
+                        (close! fr)
+                        (when exit-on-close?
+                          (System/exit 0))) ))
     (listen-resize! fr (fn [e] #_(println "resized")))
     fr))
 
@@ -148,26 +168,34 @@
         files (filter #(image-file? %) (.listFiles d))]
     (into [] (sort-by #(:datetime-digitized (exif/extract %)) files))))
 
+(defn- go!
+  ([] (go! false))
+  ([from-main?]
+   (let [wnd (main-window! 600 200 from-main?)
+         bg-color (new Color 0.2 0.2 0.2)
+         layout (new GridBagLayout)
+         container (main-container! bg-color layout)
+         image-compo (image-compo! (new Color 0.8 0.8 0.8))
+         text-compo (text-compo! bg-color)
+         images (all-images ".")
+         player (player/create! image-compo text-compo images)
+         ]
+     (set-constraints! layout image-compo 0 0 1 3
+                       {:fill GridBagConstraints/BOTH :paddingx 0 :paddingy 0})
+     (set-constraints! layout text-compo 0 3 1 1
+                       {:fill GridBagConstraints/BOTH :weighty 0.5})
+     (.add container image-compo)
+     (.add container text-compo)
+     (.add (.getContentPane wnd) container)
+     (full-screen! wnd true)
+     #_(.setVisible wnd true)
+     (player/start! player)
+     (listen-closing! wnd #(player/stop! player))
+     nil)))
+
 (defn -main
   [& args]
-  (let [wnd (main-window! 300 200)
-        bg-color (new Color 0.2 0.2 0.2)
-        layout (new GridBagLayout)
-        container (main-container! bg-color layout)
-        image-compo (image-compo! (new Color 0.8 0.8 0.8))
-        text-compo (text-compo! bg-color)
-        images (all-images ".")
-        player (player/create! image-compo text-compo images)
-        ]
-    (set-constraints! layout image-compo 0 0 1 3
-                      {:paddingx 10 :paddingy 10})
-    (set-constraints! layout text-compo 0 3 1 1
-                      {:fill GridBagConstraints/BOTH})
-    (.add container image-compo)
-    (.add container text-compo)
-    (.add (.getContentPane wnd) container)
-    (full-screen! wnd true)
-    (player/start! player)))
+  (go! true))
 
 (comment
  (look-and-feel!)
@@ -186,26 +214,6 @@
               (when (full-screen? f) (full-screen! f false)))))
        _ (full-screen! f true)
        ]
-   )
-
- (let [
-       wnd (main-window! 300 200)
-       bg-color (new Color 0.2 0.2 0.2)
-       layout (new GridBagLayout)
-       container (main-container! bg-color layout)
-       image-compo (image-compo! (new Color 0.8 0.8 0.8))
-       text-compo (text-compo! bg-color)
-       ]
-   (set-constraints! layout image-compo 0 0 1 3
-                     {:paddingx 10 :paddingy 10})
-   (set-constraints! layout text-compo 0 3 1 1
-                     {:fill GridBagConstraints/BOTH})
-   (.add container image-compo)
-   (.add container text-compo)
-   (.add (.getContentPane wnd) container)
-   (full-screen! wnd true) #_(.setVisible wnd true)
-
-   (set-text! text-compo "abc abc xyz hey")
    )
 
  )
