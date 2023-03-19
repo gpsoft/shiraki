@@ -122,13 +122,6 @@
               (if exit-on-close?
                 JFrame/EXIT_ON_CLOSE
                 JFrame/DISPOSE_ON_CLOSE)))]
-    (listen-key! fr (fn [c e]
-                      (when (= c KeyEvent/VK_ESCAPE)
-                        #_(full-screen! fr false)
-                        ;; close main window
-                        (close! fr)
-                        (when exit-on-close?
-                          (System/exit 0))) ))
     (listen-resize! fr (fn [e] #_(println "resized")))
     fr))
 
@@ -194,6 +187,18 @@
      (.setVisible wnd true)
      (player/start! player)
      (listen-closing! wnd #(player/stop! player))
+     (listen-key! wnd
+                  (fn [c e]
+                    (when (= c KeyEvent/VK_RIGHT)
+                      (player/next! player))
+                    (when (= c KeyEvent/VK_LEFT)
+                      (player/prev! player))
+                    (when (= c KeyEvent/VK_SPACE)
+                      (player/toggle-pause! player))
+                    (when (= c KeyEvent/VK_ESCAPE)
+                      #_(full-screen! wnd false)
+                      (close! wnd)) ))
+
      nil)))
 
 (defn -main
