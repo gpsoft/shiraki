@@ -39,7 +39,8 @@
          (.dispose)
          (.setUndecorated true)
          (.setVisible true))
-       (.setFullScreenWindow gd compo)
+       #_(.setFullScreenWindow gd compo)
+       (.setExtendedState compo JFrame/MAXIMIZED_BOTH)  ; FIX: another way. this won't hide alert
        (doto compo    ;; mac: should be AFTER maximize
          (.toFront)
          (.requestFocus)))
