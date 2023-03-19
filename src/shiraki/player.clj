@@ -58,10 +58,8 @@
 (defn- draw!
   [{:keys [ix ttl-compo img-compo txt-compo image-files]}]
   #_(println "ix:" ix)
-  (let [ix (move-ix ix (count image-files) true)
-        file (nth image-files ix)
-        fname (.getName file)
-        ]
+  (let [file (nth image-files ix)
+        fname (.getName file)]
     (.setText ttl-compo (str fname "(" (inc ix) "/" (count image-files) ")"))
     (.setText txt-compo "<html>abc def xyz</html>")
     (let [ii (img-contain file
