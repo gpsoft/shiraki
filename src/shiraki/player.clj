@@ -8,8 +8,9 @@
 (defonce atat-pool (atat/mk-pool))
 
 (defn create!
-  [img-compo txt-compo image-files]
+  [ttl-compo img-compo txt-compo image-files]
   (atom {:ix 0
+         :ttl-compo ttl-compo
          :img-compo img-compo
          :txt-compo txt-compo
          :image-files image-files}))
@@ -36,14 +37,17 @@
         (new ImageIcon (.getScaledInstance i iw ih Image/SCALE_SMOOTH))))))
 
 (defn- draw!
-  [{:keys [ix img-compo txt-compo image-files]}]
+  [{:keys [ix ttl-compo img-compo txt-compo image-files]}]
   (println "ix:" ix)
   (let [file (nth image-files ix)
         fname (.getName file)
-        ii (img-contain file (.getWidth img-compo) (.getHeight img-compo))
         ]
-    (.setIcon img-compo ii)
-    (.setText txt-compo fname)))
+    (.setText ttl-compo fname)
+    (.setText txt-compo "<html>abc def xyz</html>")
+    (let [ii (img-contain file
+                          (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
+                          (.getHeight img-compo))]
+      (.setIcon img-compo ii))))
 
 (defn- next!
   [player]

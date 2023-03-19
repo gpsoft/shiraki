@@ -101,7 +101,7 @@
    (let [opts (merge {:weightx 1.0
                       :weighty 1.0
                       :anchor GridBagConstraints/CENTER
-                      :fill GridBagConstraints/NONE
+                      :fill GridBagConstraints/BOTH
                       :insets (new Insets 0 0 0 0)
                       :paddingx 0
                       :paddingy 0}
@@ -146,9 +146,9 @@
     (.setHorizontalAlignment SwingConstants/CENTER)))
 
 (defn- text-compo!
-  [bg-color]
+  [bg-color font-size]
   (doto (new JLabel "" SwingConstants/CENTER)
-    (.setFont (new Font "sans serif" Font/BOLD 36))
+    (.setFont (new Font "sans serif" Font/BOLD font-size))
     (.setOpaque true)
     (.setForeground Color/WHITE)
     (.setBackground bg-color)))
@@ -171,24 +171,27 @@
 (defn- go!
   ([] (go! false))
   ([from-main?]
-   (let [wnd (main-window! 600 200 from-main?)
+   (let [wnd (main-window! 600 400 from-main?)
          bg-color (new Color 0.2 0.2 0.2)
          layout (new GridBagLayout)
          container (main-container! bg-color layout)
-         image-compo (image-compo! (new Color 0.8 0.8 0.8))
-         text-compo (text-compo! bg-color)
+         title-compo (text-compo! bg-color 18)
+         image-compo (image-compo! bg-color)
+         text-compo (text-compo! bg-color 36)
          images (all-images ".")
-         player (player/create! image-compo text-compo images)
+         player (player/create! title-compo image-compo text-compo images)
          ]
-     (set-constraints! layout image-compo 0 0 1 3
-                       {:fill GridBagConstraints/BOTH :paddingx 0 :paddingy 0})
-     (set-constraints! layout text-compo 0 3 1 1
-                       {:fill GridBagConstraints/BOTH :weighty 0.5})
+     (set-constraints! layout title-compo 0 0 1 1
+                       {:weighty 0 :paddingy 10})
+     (set-constraints! layout image-compo 0 1 1 5)
+     (set-constraints! layout text-compo 0 6 1 2
+                       {:weighty 0 :paddingy 10})
+     (.add container title-compo)
      (.add container image-compo)
      (.add container text-compo)
      (.add (.getContentPane wnd) container)
-     (full-screen! wnd true)
-     #_(.setVisible wnd true)
+     #_(full-screen! wnd true)
+     (.setVisible wnd true)
      (player/start! player)
      (listen-closing! wnd #(player/stop! player))
      nil)))
