@@ -39,7 +39,7 @@
 
 (defn- img-contain
   [file w h]
-  (let [fpath (.getName file)
+  (let [fpath (.getAbsolutePath file)
         ii (new ImageIcon fpath)
         i (.getImage ii)
         io (.getImageObserver ii)
