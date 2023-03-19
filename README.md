@@ -16,7 +16,9 @@ Show all jpeg files on the current directory (or DIR).
 
 ## Operation with keyboard
 
-- `SPACE` ...Pause(toggle)
-- `Right arrow` ...Next image
-- `Left arrow` ...Previous image
-- `ESCAPE` ...Exit
+- `SPACE` key ...Pause(toggle)
+- Right arrow key ...Next image
+- Left arrow key ...Previous image
+- `I` key ...Show Exif information
+- `ESCAPE` key ...Exit
+- `Q` key ...Exit

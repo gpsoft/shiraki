@@ -26,6 +26,10 @@
   [player]
   (:playing? @player))
 
+(defn index
+  [player]
+  (:ix @player))
+
 (defn- size-contain
   [w h iw ih]
   (let [rw (/ w iw)

@@ -1,5 +1,6 @@
 (ns shiraki.core
   (:require
+   [clojure.string :as string]
    [shiraki.exif :as exif]
    [shiraki.player :as player])
   (:import
@@ -18,8 +19,9 @@
    (UIManager/getSystemLookAndFeelClassName)))
 
 (defn- alert!
-  [m]
-  (JOptionPane/showMessageDialog nil m))
+  ([msg] (alert! msg ""))
+  ([msg title]
+   (JOptionPane/showMessageDialog nil msg title JOptionPane/PLAIN_MESSAGE)))
 
 (defn- full-screen?
   [compo]
@@ -161,6 +163,14 @@
         files (filter #(image-file? %) (.listFiles d))]
     (into [] (sort-by #(:datetime-digitized (exif/extract %)) files))))
 
+(defn- render-exif
+  [file]
+  (let [exif (exif/extract file)
+        items (exif/render exif)]
+    (->> items
+         (map (fn [[nm v]] (str nm ": " v)))
+         (string/join "\n"))))
+
 (defn- go!
   ([] (go! "."  false))
   ([path-str] (go! path-str  false))
@@ -184,19 +194,24 @@
      (.add container image-compo)
      (.add container text-compo)
      (.add (.getContentPane wnd) container)
-     #_(full-screen! wnd true)
-     (.setVisible wnd true)
+     (full-screen! wnd true)
+     #_(.setVisible wnd true)
      (player/start! player)
      (listen-closing! wnd #(player/stop! player))
      (listen-key! wnd
                   (fn [c e]
+                    #_(prn c)
                     (when (= c KeyEvent/VK_RIGHT)
                       (player/next! player))
                     (when (= c KeyEvent/VK_LEFT)
                       (player/prev! player))
                     (when (= c KeyEvent/VK_SPACE)
                       (player/toggle-pause! player))
-                    (when (= c KeyEvent/VK_ESCAPE)
+                    (when (= c KeyEvent/VK_I)
+                      (when-let [file (nth images (player/index player) nil)]
+                        (alert! (render-exif file))))
+                    (when (or (= c KeyEvent/VK_ESCAPE)
+                              (= c KeyEvent/VK_Q))
                       #_(full-screen! wnd false)
                       (close! wnd)) ))
 
