@@ -19,7 +19,7 @@
 
 (defn- move-ix
   [ix n forward?]
-  (if (nil? ix) 0
+  (if (or (nil? ix) (zero? n)) 0
     (mod ((if forward? inc dec) ix) n)))
 
 (defn playing?
@@ -58,14 +58,17 @@
 (defn- draw!
   [{:keys [ix ttl-compo img-compo txt-compo image-files]}]
   #_(println "ix:" ix)
-  (let [file (nth image-files ix)
-        fname (.getName file)]
-    (.setText ttl-compo (str fname "(" (inc ix) "/" (count image-files) ")"))
-    (.setText txt-compo "<html>abc def xyz</html>")
-    (let [ii (img-contain file
-                          (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
-                          (.getHeight img-compo))]
-      (.setIcon img-compo ii))))
+  (try
+   (let [file (nth image-files ix)
+         fname (.getName file)]
+     (.setText ttl-compo (str fname "(" (inc ix) "/" (count image-files) ")"))
+     (.setText txt-compo "<html>abc def xyz</html>")
+     (let [ii (img-contain file
+                           (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
+                           (.getHeight img-compo))]
+       (.setIcon img-compo ii)))
+   (catch Exception ex
+     (.setText ttl-compo "No image found"))))
 
 (defn- tick!
   [player]

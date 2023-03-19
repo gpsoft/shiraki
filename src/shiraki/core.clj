@@ -162,8 +162,9 @@
     (into [] (sort-by #(:datetime-digitized (exif/extract %)) files))))
 
 (defn- go!
-  ([] (go! false))
-  ([from-main?]
+  ([] (go! "."  false))
+  ([path-str] (go! path-str  false))
+  ([path-str from-main?]
    (let [wnd (main-window! 600 400 from-main?)
          bg-color (new Color 0.2 0.2 0.2)
          layout (new GridBagLayout)
@@ -171,7 +172,7 @@
          title-compo (text-compo! bg-color 18)
          image-compo (image-compo! bg-color)
          text-compo (text-compo! bg-color 36)
-         images (all-images ".")
+         images (all-images path-str)
          player (player/create! title-compo image-compo text-compo images)
          ]
      (set-constraints! layout title-compo 0 0 1 1
@@ -203,7 +204,8 @@
 
 (defn -main
   [& args]
-  (go! true))
+  (let [path-str (nth args 0 ".")]
+    (go! path-str true)))
 
 (comment
  (look-and-feel!)
