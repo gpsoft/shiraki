@@ -4,6 +4,8 @@
    [shiraki.exif :as exif]
    [shiraki.player :as player])
   (:import
+   [java.time Instant ZoneId]
+   [java.time.format DateTimeFormatter]
    [java.awt GraphicsDevice GraphicsEnvironment Font Color]
    [java.awt GridBagConstraints GridBagLayout Insets]
    [java.awt.event KeyListener KeyEvent ComponentListener ComponentEvent]
@@ -158,11 +160,26 @@
   (and (.isFile file)
        (re-matches #"(?i).*jpg$" (.getName file))))
 
+(defn- file-timestamp
+  [file]
+  (let [unixtime (quot (.lastModified file) 1000)
+        fmt (DateTimeFormatter/ofPattern "yyyy:MM:dd HH:mm:ss")]  ;; exif-like format
+    (-> (Instant/ofEpochSecond unixtime)
+        (.atZone (ZoneId/systemDefault))
+        (.format fmt))))
+
+(defn- image-timestamp
+  [file]
+  (let [exif-timestamp (:datetime-digitized (exif/extract file))]
+    (if (nil? exif-timestamp)
+      (file-timestamp file)
+      exif-timestamp)))
+
 (defn- all-images
   [path-str]
   (let [d (clojure.java.io/file path-str)
         files (filter #(image-file? %) (.listFiles d))]
-    (into [] (sort-by #(:datetime-digitized (exif/extract %)) files))))
+    (into [] (sort-by #(image-timestamp %) files))))
 
 (defn- render-exif
   [file]
