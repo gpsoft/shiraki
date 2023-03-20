@@ -173,9 +173,9 @@
          (string/join "\n"))))
 
 (defn- go!
-  ([] (go! "."  false))
-  ([path-str] (go! path-str  false))
-  ([path-str from-main?]
+  ([] (go! "." 1000 false))
+  ([path-str] (go! path-str 1000 false))
+  ([path-str interval from-main?]
    (let [wnd (main-window! 600 400 from-main?)
          bg-color (new Color 0.2 0.2 0.2)
          layout (new GridBagLayout)
@@ -184,7 +184,7 @@
          image-compo (image-compo! bg-color)
          text-compo (text-compo! bg-color 36)
          images (all-images path-str)
-         player (player/create! title-compo image-compo text-compo images)
+         player (player/create! title-compo image-compo text-compo images interval)
          ]
      (set-constraints! layout title-compo 0 0 1 1
                        {:weighty 0 :paddingy 10})
@@ -221,8 +221,9 @@
 
 (defn -main
   [& args]
-  (let [path-str (nth args 0 ".")]
-    (go! path-str true)))
+  (let [path-str (nth args 0 ".")
+        interval (Integer/parseInt (nth args 1 "4000"))]
+    (go! path-str interval true)))
 
 (comment
  (look-and-feel!)

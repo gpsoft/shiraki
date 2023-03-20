@@ -8,11 +8,11 @@
 
 ## Usage
 
-To show all jpeg files on the current directory (or DIR):
+```
+$ java -jar shiraki.jar [DIR] [INTERVAL(msec)]
+```
 
-```
-$ java -jar shiraki.jar [DIR]
-```
+Shows all jpeg files on the current directory (or DIR) in order of timestamp. Default interval is 4000msec.
 
 ## Operation with keyboard
 

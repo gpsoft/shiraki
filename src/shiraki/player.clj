@@ -40,9 +40,9 @@
 
 ;;; State and primitive operations
 (defn- st-create!
-  [ttl-compo img-compo txt-compo image-files]
+  [ttl-compo img-compo txt-compo image-files interval]
   (atom {:playing? false
-         :interval 4000
+         :interval interval
          :ix nil  ;; what image shown now. only st-play-first! reset this to zero.
          :ttl-compo ttl-compo
          :img-compo img-compo
@@ -118,8 +118,8 @@
 
 ;;; API
 (defn create!
-  [ttl-compo img-compo txt-compo image-files]
-  (st-create! ttl-compo img-compo txt-compo image-files))
+  [ttl-compo img-compo txt-compo image-files interval]
+  (st-create! ttl-compo img-compo txt-compo image-files interval))
 
 (defn playing?
   [player]
