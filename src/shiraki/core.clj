@@ -17,7 +17,7 @@
    [javax.swing JPanel SwingConstants])
   (:gen-class))
 
-(def comment-file "shiraki.edn")
+(def comment-file ".shiraki.edn")
 
 (defn- look-and-feel!
   []
@@ -193,7 +193,8 @@
         f-str (-> d
                   (.toPath)
                   (.resolve comment-file)
-                  (.toString))]
+                  (.toString))
+        _ (prn f-str)]
     (when (.exists (io/file f-str))
       (-> f-str
           (slurp)
