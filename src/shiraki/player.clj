@@ -5,9 +5,40 @@
    [java.awt Image]
    [javax.swing ImageIcon]))
 
-(defonce atat-pool (atat/mk-pool))
 
-(defn create!
+;;; Timer
+(defonce atat-pool (atat/mk-pool))
+(defn- timer-running?
+  []
+  (if (atat/scheduled-jobs atat-pool) true false))
+(defn- timer-stop!
+  []
+  (atat/stop-and-reset-pool! atat-pool))
+(defn- timer-start!
+  [handler interval]
+  (let [running? (timer-running?)]
+    (when running? (timer-stop!))
+    (atat/every interval
+                handler
+                atat-pool
+                :initial-delay (if running? interval 0))))
+
+
+;;; Utils
+(defn- move-ix
+  [ix n forward?]
+  (if (or (nil? ix) (zero? n)) 0
+    (mod ((if forward? inc dec) ix) n)))
+(defn- size-contain
+  [w h iw ih]
+  (let [rw (/ w iw)
+        rh (/ h ih)
+        r (min rw rh)]
+    [(int (* iw r)) (int (* ih r))]))
+
+
+;;; State and primitive operations
+(defn- st-create!
   [ttl-compo img-compo txt-compo image-files]
   (atom {:playing? false
          :interval 4000
@@ -16,26 +47,28 @@
          :img-compo img-compo
          :txt-compo txt-compo
          :image-files image-files}))
+(defn- st-playing?
+  [st]
+  (:playing? st))
+(defn- st-index
+  [st]
+  (:ix st))
+(defn- st-interval
+  [st]
+  (:interval st))
+(defn- st-move-ix!
+  [player forward?]
+  (swap! player
+         (fn [{:keys [ix image-files] :as st}]
+           (let [new-ix (move-ix ix (count image-files) forward?)]
+             #_(prn ix new-ix)
+             (assoc st :ix new-ix)))))
+(defn- st-play!
+  [player starting?]
+  (when-not (= (st-playing? @player) starting?)
+    (swap! player
+           #(assoc % :playing? starting?))))
 
-(defn- move-ix
-  [ix n forward?]
-  (if (or (nil? ix) (zero? n)) 0
-    (mod ((if forward? inc dec) ix) n)))
-
-(defn playing?
-  [player]
-  (:playing? @player))
-
-(defn index
-  [player]
-  (:ix @player))
-
-(defn- size-contain
-  [w h iw ih]
-  (let [rw (/ w iw)
-        rh (/ h ih)
-        r (min rw rh)]
-    [(int (* iw r)) (int (* ih r))]))
 
 (defn- img-contain
   [file w h]
@@ -50,14 +83,6 @@
       ii
       (let [[iw ih] (size-contain w h iw ih)]
         (new ImageIcon (.getScaledInstance i iw ih Image/SCALE_SMOOTH))))))
-
-(defn- move-ix!
-  [player forward?]
-  (swap! player
-         (fn [{:keys [ix image-files] :as st}]
-           (let [new-ix (move-ix ix (count image-files) forward?)]
-             #_(prn ix new-ix)
-             (assoc st :ix new-ix)))))
 
 (defn- draw!
   [{:keys [ix ttl-compo img-compo txt-compo image-files]}]
@@ -76,53 +101,61 @@
 
 (defn- tick!
   [player]
-  (move-ix! player true)
+  (st-move-ix! player true)
   (draw! @player))
+
+
+
+
+;;; API
+(defn create!
+  [ttl-compo img-compo txt-compo image-files]
+  (st-create! ttl-compo img-compo txt-compo image-files))
+
+(defn playing?
+  [player]
+  (st-playing? @player))
+
+(defn index
+  [player]
+  (st-index @player))
 
 (defn next!
   [player]
-  (tick! player))
+  (tick! player)
+  (when (st-playing? @player)
+    (timer-start! #(tick! player) (st-interval @player))))
 
 (defn prev!
   [player]
-  (move-ix! player false)
-  (draw! @player))
+  (st-move-ix! player false)
+  (draw! @player)
+  (when (st-playing? @player)
+    (timer-start! #(tick! player) (st-interval @player))))
 
 (defn stop!
   [player]
-  (swap! player
-         #(assoc % :playing? false))
-  (atat/stop-and-reset-pool! atat-pool))
+  (timer-stop!)
+  (st-play! player false))
 
 (defn start!
   [player]
-  (swap! player
-         #(assoc % :playing? true))
-  (let [interval (:interval @player)]
-    (atat/every interval
-                #(tick! player)
-                atat-pool)))
+  (st-play! player true)
+  (timer-start! #(tick! player) (st-interval @player)))
 
 (defn suspend!
   [player]
-  (when (playing? player)
+  (when (st-playing? @player)
     (stop! player)))
 
 (defn resume!
   [player]
-  (when-not (playing? player)
-    (swap! player
-           #(assoc % :playing? true))
-    (let [interval (:interval @player)]
-      (atat/every interval
-                  #(tick! player)
-                  atat-pool
-                  :initial-delay interval
-                  ))))
+  (st-play! player true)
+  (timer-start! #(tick! player) (st-interval @player)))
 
 (defn toggle-pause!
   [player]
-  (if (playing? player)
+  (if (st-playing? @player)
     (suspend! player)
     (resume! player)))
 

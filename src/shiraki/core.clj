@@ -197,7 +197,8 @@
      (.add (.getContentPane wnd) container)
      (full-screen! wnd true)
      #_(.setVisible wnd true)
-     (player/start! player)
+     (future   ;; wait for layout to settle down
+      (player/start! player))
      (listen-closing! wnd #(player/stop! player))
      (listen-key! wnd
                   (fn [c e]
