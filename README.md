@@ -8,11 +8,11 @@
 
 ## Usage
 
-```
-java -jar shiraki.jar [DIR]
-```
+To show all jpeg files on the current directory (or DIR):
 
-Show all jpeg files on the current directory (or DIR).
+```
+$ java -jar shiraki.jar [DIR]
+```
 
 ## Operation with keyboard
 
@@ -20,5 +20,10 @@ Show all jpeg files on the current directory (or DIR).
 - Right arrow key ...Next image
 - Left arrow key ...Previous image
 - `I` key ...Show Exif information
-- `ESCAPE` key ...Exit
-- `Q` key ...Exit
+- `ESCAPE` or `Q` key ...Exit
+
+## メモ
+
+- [xfce]フルスクリーンを解除したとき、ウィンドウサイズが大きいまま
+- [mac]`setFullScreenWindow`でフルスクリーン化すると、Exif情報のメッセージボックスが隠れてしまう
+- `GridBagLayout`のペインのサイズを知る方法は?

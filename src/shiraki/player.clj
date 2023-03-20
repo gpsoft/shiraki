@@ -21,13 +21,14 @@
     (atat/every interval
                 handler
                 atat-pool
-                :initial-delay (if running? interval 0))))
+                :initial-delay interval)))
 
 
 ;;; Utils
 (defn- move-ix
   [ix n forward?]
-  (if (or (nil? ix) (zero? n)) 0
+  (if (zero? n)
+    0
     (mod ((if forward? inc dec) ix) n)))
 (defn- size-contain
   [w h iw ih]
@@ -42,7 +43,7 @@
   [ttl-compo img-compo txt-compo image-files]
   (atom {:playing? false
          :interval 4000
-         :ix nil  ;; what image shown now
+         :ix nil  ;; what image shown now. only st-play-first! reset this to zero.
          :ttl-compo ttl-compo
          :img-compo img-compo
          :txt-compo txt-compo
@@ -52,7 +53,9 @@
   (:playing? st))
 (defn- st-index
   [st]
-  (:ix st))
+  (let [ix (:ix st)]
+    (assert (some? ix))  ;; ensure st-play-first! is done.
+    ix))
 (defn- st-interval
   [st]
   (:interval st))
@@ -63,11 +66,16 @@
            (let [new-ix (move-ix ix (count image-files) forward?)]
              #_(prn ix new-ix)
              (assoc st :ix new-ix)))))
+(defn- st-play-first!
+  [player]
+  (swap! player assoc
+         :ix 0
+         :playing? true))
 (defn- st-play!
   [player starting?]
-  (when-not (= (st-playing? @player) starting?)
-    (swap! player
-           #(assoc % :playing? starting?))))
+  (if (= (st-playing? @player) starting?)
+    @player
+    (swap! player assoc :playing? starting?)))
 
 
 (defn- img-contain
@@ -85,12 +93,13 @@
         (new ImageIcon (.getScaledInstance i iw ih Image/SCALE_SMOOTH))))))
 
 (defn- draw!
-  [{:keys [ix ttl-compo img-compo txt-compo image-files]}]
+  [{:keys [playing? ix ttl-compo img-compo txt-compo image-files]}]
   #_(println "ix:" ix)
   (try
    (let [file (nth image-files ix)
-         fname (.getName file)]
-     (.setText ttl-compo (str fname "(" (inc ix) "/" (count image-files) ")"))
+         fname (.getName file)
+         mark (if playing? "▶ " "■ ")]
+     (.setText ttl-compo (str mark fname "(" (inc ix) "/" (count image-files) ")"))
      (.setText txt-compo "<html>abc def xyz</html>")
      (let [ii (img-contain file
                            (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
@@ -101,8 +110,8 @@
 
 (defn- tick!
   [player]
-  (st-move-ix! player true)
-  (draw! @player))
+  (let [st (st-move-ix! player true)]
+    (draw! st)))
 
 
 
@@ -128,20 +137,22 @@
 
 (defn prev!
   [player]
-  (st-move-ix! player false)
-  (draw! @player)
-  (when (st-playing? @player)
-    (timer-start! #(tick! player) (st-interval @player))))
+  (let [st (st-move-ix! player false)]
+    (draw! st)
+    (when (st-playing? st)
+      (timer-start! #(tick! player) (st-interval st)))))
 
 (defn stop!
   [player]
   (timer-stop!)
-  (st-play! player false))
+  (let [st (st-play! player false)]
+    (draw! st)))
 
 (defn start!
   [player]
-  (st-play! player true)
-  (timer-start! #(tick! player) (st-interval @player)))
+  (let [st (st-play-first! player)]
+    (draw! st)
+    (timer-start! #(tick! player) (st-interval st))))
 
 (defn suspend!
   [player]
@@ -150,8 +161,9 @@
 
 (defn resume!
   [player]
-  (st-play! player true)
-  (timer-start! #(tick! player) (st-interval @player)))
+  (let [st (st-play! player true)]
+    (draw! st)
+    (timer-start! #(tick! player) (st-interval st))))
 
 (defn toggle-pause!
   [player]
