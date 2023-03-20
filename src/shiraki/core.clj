@@ -1,6 +1,8 @@
 (ns shiraki.core
   (:require
    [clojure.string :as string]
+   [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [shiraki.exif :as exif]
    [shiraki.player :as player])
   (:import
@@ -14,6 +16,8 @@
    [javax.swing UIManager JOptionPane JFrame JLabel]
    [javax.swing JPanel SwingConstants])
   (:gen-class))
+
+(def comment-file "shiraki.edn")
 
 (defn- look-and-feel!
   []
@@ -177,11 +181,23 @@
 
 (defn- all-images
   [path-str]
-  (let [d (clojure.java.io/file path-str)
+  (let [d (io/file path-str)
         files (filter #(image-file? %) (.listFiles d))]
     (->> files
          (sort-by #(image-timestamp %))
          (into []))))
+
+(defn- comment-map
+  [path-str]
+  (let [d (io/file path-str)
+        f-str (-> d
+                  (.toPath)
+                  (.resolve comment-file)
+                  (.toString))]
+    (when (.exists (io/file f-str))
+      (-> f-str
+          (slurp)
+          (edn/read-string)))))
 
 (defn- render-exif
   [file]
@@ -196,20 +212,23 @@
   ([path-str] (go! path-str 1000 false))
   ([path-str interval from-main?]
    (let [wnd (main-window! 600 400 from-main?)
-         bg-color (new Color 0.2 0.2 0.2)
+         bg-color (new Color 0.1 0.1 0.1)
          layout (new GridBagLayout)
          container (main-container! bg-color layout)
          title-compo (text-compo! bg-color 18)
-         image-compo (image-compo! bg-color)
+         image-compo (image-compo! (new Color 0.2 0.2 0.2))
          text-compo (text-compo! bg-color 36)
          images (all-images path-str)
-         player (player/create! title-compo image-compo text-compo images interval)
+         comments (comment-map path-str)
+         player (player/create!
+                 title-compo image-compo text-compo
+                 images interval comments)
          ]
      (set-constraints! layout title-compo 0 0 1 1
-                       {:weighty 0 :paddingy 10})
+                       {:weighty 0 :paddingy 8})
      (set-constraints! layout image-compo 0 1 1 5)
      (set-constraints! layout text-compo 0 6 1 2
-                       {:weighty 0 :paddingy 10})
+                       {:weighty 0 :paddingy 16})
      (.add container title-compo)
      (.add container image-compo)
      (.add container text-compo)

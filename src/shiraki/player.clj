@@ -41,14 +41,15 @@
 
 ;;; State and primitive operations
 (defn- st-create!
-  [ttl-compo img-compo txt-compo image-files interval]
+  [ttl-compo img-compo txt-compo image-files interval comments]
   (atom {:playing? false
          :interval interval
          :ix nil  ;; what image shown now. only st-play-first! reset this to zero.
          :ttl-compo ttl-compo
          :img-compo img-compo
          :txt-compo txt-compo
-         :image-files image-files}))
+         :image-files image-files
+         :comment-map comments}))
 (defn- st-playing?
   [st]
   (:playing? st))
@@ -99,12 +100,18 @@
     (str mark fname "(" n "/" N ")")))
 
 (defn- render-description
-  [file fname]
-  (let [exif-comment (:user-comment (exif/extract file))]
-    (str "<html>" exif-comment "</html>")))
+  [description file]
+  (str "<html>"
+       (or description (:user-comment (exif/extract file)))
+       "</html>"))
+
+(defn- lookup-comment
+  [comment-map fname]
+  (let [fname (.toUpperCase fname)]
+    (get comment-map fname (get comment-map (keyword fname)))))
 
 (defn- draw!
-  [{:keys [playing? ix ttl-compo img-compo txt-compo image-files]}]
+  [{:keys [playing? ix ttl-compo img-compo txt-compo image-files comment-map]}]
   #_(println "ix:" ix)
   (try
    (let [file (nth image-files ix)
@@ -112,7 +119,7 @@
      (.setText ttl-compo
                (render-title playing? fname (inc ix) (count image-files)))
      (.setText txt-compo
-               (render-description file fname))
+               (render-description (lookup-comment comment-map fname) file))
      (let [ii (img-contain file
                            (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
                            (.getHeight img-compo))]
@@ -131,8 +138,8 @@
 
 ;;; API
 (defn create!
-  [ttl-compo img-compo txt-compo image-files interval]
-  (st-create! ttl-compo img-compo txt-compo image-files interval))
+  [ttl-compo img-compo txt-compo image-files interval comments]
+  (st-create! ttl-compo img-compo txt-compo image-files interval comments))
 
 (defn playing?
   [player]
