@@ -15,7 +15,8 @@
                   "Date/Time Digitized" :datetime-digitized
                   "Exposure Bias Value" :exp-compensation
                   "Focal Length" :focal-length
-                  "Focal Length 35" :focal-length-in-35}
+                  "Focal Length 35" :focal-length-in-35
+                  "User Comment" :user-comment}
    "File" {"File Name" :file-name
            "File Size" :file-size}})
 
@@ -31,6 +32,7 @@
    [:f "絞り"]
    [:iso "ISO"]
    [:exp-compensation "露出補正"]
+   [:user-comment "コメント"]
    [:datetime-original "撮影日時"]
    [:datetime-digitized "デジタル化日時"]
    [:datetime-last-modified "更新日時"]])

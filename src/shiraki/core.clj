@@ -179,7 +179,9 @@
   [path-str]
   (let [d (clojure.java.io/file path-str)
         files (filter #(image-file? %) (.listFiles d))]
-    (into [] (sort-by #(image-timestamp %) files))))
+    (->> files
+         (sort-by #(image-timestamp %))
+         (into []))))
 
 (defn- render-exif
   [file]

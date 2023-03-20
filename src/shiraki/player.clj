@@ -1,6 +1,7 @@
 (ns shiraki.player
   (:require
-   [overtone.at-at :as atat])
+   [overtone.at-at :as atat]
+   [shiraki.exif :as exif])
   (:import
    [java.awt Image]
    [javax.swing ImageIcon]))
@@ -92,20 +93,32 @@
       (let [[iw ih] (size-contain w h iw ih)]
         (new ImageIcon (.getScaledInstance i iw ih Image/SCALE_SMOOTH))))))
 
+(defn- render-title
+  [playing? fname n N]
+  (let [mark (if playing? "▶ " "■ ")]
+    (str mark fname "(" n "/" N ")")))
+
+(defn- render-description
+  [file fname]
+  (let [exif-comment (:user-comment (exif/extract file))]
+    (str "<html>" exif-comment "</html>")))
+
 (defn- draw!
   [{:keys [playing? ix ttl-compo img-compo txt-compo image-files]}]
   #_(println "ix:" ix)
   (try
    (let [file (nth image-files ix)
-         fname (.getName file)
-         mark (if playing? "▶ " "■ ")]
-     (.setText ttl-compo (str mark fname "(" (inc ix) "/" (count image-files) ")"))
-     (.setText txt-compo "<html>abc def xyz</html>")
+         fname (.getName file)]
+     (.setText ttl-compo
+               (render-title playing? fname (inc ix) (count image-files)))
+     (.setText txt-compo
+               (render-description file fname))
      (let [ii (img-contain file
                            (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
                            (.getHeight img-compo))]
        (.setIcon img-compo ii)))
    (catch Exception ex
+     #_(prn ex)
      (.setText ttl-compo "No image found"))))
 
 (defn- tick!
