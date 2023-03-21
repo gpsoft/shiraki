@@ -137,38 +137,46 @@
          comments (comment-map path-str)
          player (player/create!
                  title-compo image-compo comment-compo
-                 images interval comments)
+                 images interval comments
+                 (fn []
+                   ;; returns size of image pane
+                   (let [_ (.layoutContainer layout container)
+                         dim (.getLayoutDimensions layout) ; we have a 1x3 grid
+                         w (ffirst dim)                    ; dim[0] are width of each column
+                         h (nth (second dim) 1)]           ; dim[1] are height of each row
+                     #_(prn [w h])
+                     [w h])))
          ]
-     (set-constraints! layout title-compo 0 0 1 1
-                       {:weighty 0 :paddingy 8})
-     (set-constraints! layout image-compo 0 1 1 5)
-     (set-constraints! layout comment-compo 0 6 1 2
-                       {:weighty 0 :paddingy 16})
+     (set-constraints! layout title-compo 0 0 1 1   ; we have a 1x3 grid
+                       {:weighty 0 :paddingy 8})    ; row ix=0 ... title row
+     (set-constraints! layout image-compo 0 1 1 1)  ; row ix=1 ... image row
+     (set-constraints! layout comment-compo 0 2 1 1 ; row ix=2 ... comment row
+                       {:weighty 0 :paddingy 16})   ;
      (.add container title-compo)
      (.add container image-compo)
      (.add container comment-compo)
      (.add (.getContentPane wnd) container)
      (full-screen! wnd true)
-     #_(.setVisible wnd true)
+     ; (.setVisible wnd true)
      (future   ;; wait for layout to settle down
-      (player/start! player))
+             (player/start! player))
      (gui/listen-closing! wnd #(player/stop! player))
      (gui/listen-key! wnd
-                  (fn [c e]
-                    #_(prn c)
-                    (when (= c KeyEvent/VK_RIGHT)
-                      (player/next! player))
-                    (when (= c KeyEvent/VK_LEFT)
-                      (player/prev! player))
-                    (when (= c KeyEvent/VK_SPACE)
-                      (player/toggle-pause! player))
-                    (when (= c KeyEvent/VK_I)
-                      (when-let [file (nth images (player/index player) nil)]
-                        (gui/alert! wnd (render-exif file))))
-                    (when (or (= c KeyEvent/VK_ESCAPE)
-                              (= c KeyEvent/VK_Q))
-                      #_(full-screen! wnd false)
-                      (gui/close-window! wnd)) ))
+                      (fn [c e]
+                        #_(prn c)
+                        (when (= c KeyEvent/VK_RIGHT)
+                          (player/next! player))
+                        (when (= c KeyEvent/VK_LEFT)
+                          (player/prev! player))
+                        (when (= c KeyEvent/VK_SPACE)
+                          (player/toggle-pause! player))
+                        (when (= c KeyEvent/VK_I)
+                          (when-let [file (nth images (player/index player) nil)]
+                            (gui/alert! wnd (render-exif file))))
+                        (when (or (= c KeyEvent/VK_ESCAPE)
+                                  (= c KeyEvent/VK_Q))
+                          #_(full-screen! wnd false)
+                          (gui/close-window! wnd)) ))
 
      nil)))
 

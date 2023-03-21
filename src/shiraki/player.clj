@@ -26,7 +26,7 @@
 
 ;;; State and primitive operations
 (defn- st-create!
-  [ttl-compo img-compo cmt-compo image-files interval comments]
+  [ttl-compo img-compo cmt-compo image-files interval comments img-pane-size-fn]
   (atom {:playing? false
          :interval interval
          :ix nil  ;; what image shown now. only st-play-first! reset this to zero.
@@ -34,7 +34,8 @@
          :img-compo img-compo
          :cmt-compo cmt-compo
          :image-files image-files
-         :comment-map comments}))
+         :comment-map comments
+         :img-pane-size-fn img-pane-size-fn}))
 (defn- st-playing?
   [st]
   (:playing? st))
@@ -86,7 +87,8 @@
 (defn- draw!
   [{:keys [playing? ix
            ttl-compo img-compo cmt-compo
-           image-files comment-map]}]
+           image-files comment-map
+           img-pane-size-fn]}]
   #_(println "ix:" ix)
   (try
    (let [file (nth image-files ix)
@@ -95,13 +97,17 @@
                 playing? fname (inc ix) (count image-files))
          cmt (render-comment
               (lookup-comment comment-map fname) file)
-         ii (gui/img-contained
-             file
-             (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
-             (.getHeight img-compo))]
+         ]
      (.setText ttl-compo title)
-     (.setIcon img-compo ii)
-     (.setText cmt-compo cmt))
+     (.setText cmt-compo cmt)
+     ;; draw image last
+     (let [[w h] (img-pane-size-fn)
+           ii (gui/img-contained
+               file
+               w h
+               #_(.getWidth img-compo)
+               #_(.getHeight img-compo))]
+       (.setIcon img-compo ii)))
    (catch Exception ex
      #_(prn ex)
      (.setText ttl-compo "No image found"))))
@@ -114,8 +120,8 @@
 
 ;;; API
 (defn create!
-  [ttl-compo img-compo cmt-compo image-files interval comments]
-  (st-create! ttl-compo img-compo cmt-compo image-files interval comments))
+  [ttl-compo img-compo cmt-compo image-files interval comments img-pane-size-fn]
+  (st-create! ttl-compo img-compo cmt-compo image-files interval comments img-pane-size-fn))
 
 (defn playing?
   [player]
