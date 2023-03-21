@@ -25,9 +25,9 @@
    (UIManager/getSystemLookAndFeelClassName)))
 
 (defn- alert!
-  ([msg] (alert! msg ""))
-  ([msg title]
-   (JOptionPane/showMessageDialog nil msg title JOptionPane/PLAIN_MESSAGE)))
+  ([parent msg] (alert! nil msg ""))
+  ([parent msg title]
+   (JOptionPane/showMessageDialog parent msg title JOptionPane/PLAIN_MESSAGE)))
 
 (defn- full-screen?
   [compo]
@@ -193,8 +193,7 @@
         f-str (-> d
                   (.toPath)
                   (.resolve comment-file)
-                  (.toString))
-        _ (prn f-str)]
+                  (.toString))]
     (when (.exists (io/file f-str))
       (-> f-str
           (slurp)
@@ -250,7 +249,7 @@
                       (player/toggle-pause! player))
                     (when (= c KeyEvent/VK_I)
                       (when-let [file (nth images (player/index player) nil)]
-                        (alert! (render-exif file))))
+                        (alert! wnd (render-exif file))))
                     (when (or (= c KeyEvent/VK_ESCAPE)
                               (= c KeyEvent/VK_Q))
                       #_(full-screen! wnd false)
@@ -266,7 +265,7 @@
 
 (comment
  (look-and-feel!)
- (alert! "hey")
+ (alert! nil "hey")
 
  (let [f (doto (new JFrame)
            (.setSize 300 200)
@@ -275,7 +274,7 @@
           f
           (fn [c e]
             (when (= c KeyEvent/VK_ESCAPE)
-              #_(alert! "Closing!")
+              #_(alert! f "Closing!")
               #_(close! f)
               #_(System/exit 0)
               (when (full-screen? f) (full-screen! f false)))))
