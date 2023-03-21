@@ -29,35 +29,51 @@
   ([parent msg title]
    (JOptionPane/showMessageDialog parent msg title JOptionPane/PLAIN_MESSAGE)))
 
-(defn- full-screen?
+(defn- mac-os?
+  []
+  (let [os-name (System/getProperty "os.name")]
+    (.startsWith os-name "Mac")))
+
+(defn- full-screen-es?
+  [compo]
+  (bit-and (.getExtendedState compo) JFrame/MAXIMIZED_BOTH))
+(defn- full-screen-ge?
   [compo]
   (let [ge (GraphicsEnvironment/getLocalGraphicsEnvironment)
         gd (.getDefaultScreenDevice ge)]
     (not (nil? (.getFullScreenWindow gd)))))
+(defn- full-screen?
+  [compo]
+  (if (mac-os?)
+    (full-screen-es? compo)
+    (full-screen-ge? compo)))
 
+(defn- full-screen-es!
+  [compo toggle]
+  (.setExtendedState compo (if toggle JFrame/MAXIMIZED_BOTH JFrame/NORMAL)))
+(defn- full-screen-ge!
+  [compo toggle]
+  (let [ge (GraphicsEnvironment/getLocalGraphicsEnvironment)
+        gd (.getDefaultScreenDevice ge)]
+    (.setFullScreenWindow gd (if toggle compo nil))))
 (defn- full-screen!
   [compo toggle]
   (let [ge (GraphicsEnvironment/getLocalGraphicsEnvironment)
         gd (.getDefaultScreenDevice ge)]
+    (doto compo
+      (.dispose)
+      (.setUndecorated toggle)
+      (.setVisible true))
+    (if (mac-os?)
+      (full-screen-es! compo toggle)
+      (full-screen-ge! compo toggle))
+    ;; FIX: linux: restore window size?
     (if toggle
-      (do
-       (doto compo
-         (.dispose)
-         (.setUndecorated true)
-         (.setVisible true))
-       (.setFullScreenWindow gd compo)
-       #_(.setExtendedState compo JFrame/MAXIMIZED_BOTH)  ; FIX: another way. this won't hide alert
-       (doto compo    ;; mac: should be AFTER maximize
-         (.toFront)
-         (.requestFocus)))
-      (do
-       (.setFullScreenWindow gd nil)
-       (doto compo
-         (.dispose)
-         (.setUndecorated false)
-         ;; FIX: linux: restore window size?
-         (.setVisible true)
-         (.repaint))))))
+      (doto compo    ;; mac: should be AFTER maximize
+        (.toFront)
+        (.requestFocus))
+      (doto compo
+        (.repaint)))))
 
 (defn- close!
   [compo]

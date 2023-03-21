@@ -39,4 +39,5 @@ The comment file is written in edn format and placed in the same directory as im
 
 - [xfce]フルスクリーンを解除したとき、ウィンドウサイズが大きいまま
 - [mac]`setFullScreenWindow`でフルスクリーン化すると、Exif情報のメッセージボックスが隠れてしまう
+- [mac]OS Xネイティブのフルスクリーンモードを使う方法は?
 - `GridBagLayout`のペインのサイズを知る方法は?
