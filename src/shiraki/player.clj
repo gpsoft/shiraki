@@ -1,10 +1,9 @@
 (ns shiraki.player
   (:require
    [overtone.at-at :as atat]
-   [shiraki.exif :as exif])
-  (:import
-   [java.awt Image]
-   [javax.swing ImageIcon]))
+   [shiraki.util :as u]
+   [shiraki.gui :as gui]
+   [shiraki.exif :as exif]))
 
 
 ;;; Timer
@@ -25,29 +24,15 @@
                 :initial-delay interval)))
 
 
-;;; Utils
-(defn- move-ix
-  [ix n forward?]
-  (if (zero? n)
-    0
-    (mod ((if forward? inc dec) ix) n)))
-(defn- size-contain
-  [w h iw ih]
-  (let [rw (/ w iw)
-        rh (/ h ih)
-        r (min rw rh)]
-    [(int (* iw r)) (int (* ih r))]))
-
-
 ;;; State and primitive operations
 (defn- st-create!
-  [ttl-compo img-compo txt-compo image-files interval comments]
+  [ttl-compo img-compo cmt-compo image-files interval comments]
   (atom {:playing? false
          :interval interval
          :ix nil  ;; what image shown now. only st-play-first! reset this to zero.
          :ttl-compo ttl-compo
          :img-compo img-compo
-         :txt-compo txt-compo
+         :cmt-compo cmt-compo
          :image-files image-files
          :comment-map comments}))
 (defn- st-playing?
@@ -65,7 +50,7 @@
   [player forward?]
   (swap! player
          (fn [{:keys [ix image-files] :as st}]
-           (let [new-ix (move-ix ix (count image-files) forward?)]
+           (let [new-ix (u/move-ix ix (count image-files) forward?)]
              #_(prn ix new-ix)
              (assoc st :ix new-ix)))))
 (defn- st-play-first!
@@ -80,50 +65,43 @@
     (swap! player assoc :playing? starting?)))
 
 
-(defn- img-contain
-  [file w h]
-  (let [fpath (.getAbsolutePath file)
-        ii (new ImageIcon fpath)
-        i (.getImage ii)
-        io (.getImageObserver ii)
-        iw (.getWidth i io)
-        ih (.getHeight i io)
-        ]
-    (if (and (> w iw) (> h ih))
-      ii
-      (let [[iw ih] (size-contain w h iw ih)]
-        (new ImageIcon (.getScaledInstance i iw ih Image/SCALE_SMOOTH))))))
-
+;;; Main
 (defn- render-title
   [playing? fname n N]
   (let [mark (if playing? "▶ " "■ ")]
     (str mark fname "(" n "/" N ")")))
 
-(defn- render-description
-  [description file]
+(defn- render-comment
+  [cmt file]
   (str "<html>"
-       (or description (:user-comment (exif/extract file)))
+       (or cmt (:user-comment (exif/extract file)))
        "</html>"))
 
 (defn- lookup-comment
   [comment-map fname]
   (let [fname (.toUpperCase fname)]
-    (get comment-map fname (get comment-map (keyword fname)))))
+    (get comment-map fname
+         (get comment-map (keyword fname)))))
 
 (defn- draw!
-  [{:keys [playing? ix ttl-compo img-compo txt-compo image-files comment-map]}]
+  [{:keys [playing? ix
+           ttl-compo img-compo cmt-compo
+           image-files comment-map]}]
   #_(println "ix:" ix)
   (try
    (let [file (nth image-files ix)
-         fname (.getName file)]
-     (.setText ttl-compo
-               (render-title playing? fname (inc ix) (count image-files)))
-     (.setText txt-compo
-               (render-description (lookup-comment comment-map fname) file))
-     (let [ii (img-contain file
-                           (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
-                           (.getHeight img-compo))]
-       (.setIcon img-compo ii)))
+         fname (.getName file)
+         title (render-title
+                playing? fname (inc ix) (count image-files))
+         cmt (render-comment
+              (lookup-comment comment-map fname) file)
+         ii (gui/img-contained
+             file
+             (.getWidth img-compo)   ;; FIX: want size of pane (not size of compo)
+             (.getHeight img-compo))]
+     (.setText ttl-compo title)
+     (.setIcon img-compo ii)
+     (.setText cmt-compo cmt))
    (catch Exception ex
      #_(prn ex)
      (.setText ttl-compo "No image found"))))
@@ -134,12 +112,10 @@
     (draw! st)))
 
 
-
-
 ;;; API
 (defn create!
-  [ttl-compo img-compo txt-compo image-files interval comments]
-  (st-create! ttl-compo img-compo txt-compo image-files interval comments))
+  [ttl-compo img-compo cmt-compo image-files interval comments]
+  (st-create! ttl-compo img-compo cmt-compo image-files interval comments))
 
 (defn playing?
   [player]
