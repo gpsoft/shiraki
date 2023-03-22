@@ -129,7 +129,7 @@
    (gui/look-and-feel!)
    (let [wnd (main-window! 600 400 from-main?)
          layout (new GridBagLayout)
-         container (main-container! color-black layout)
+         container (main-container! color-dark layout)
          title-compo (text-compo! color-black 18)
          image-compo (image-compo! color-dark)
          comment-compo (text-compo! color-black 36)
@@ -149,7 +149,8 @@
          ]
      (set-constraints! layout title-compo 0 0 1 1   ; we have a 1x3 grid
                        {:weighty 0 :paddingy 8})    ; row ix=0 ... title row
-     (set-constraints! layout image-compo 0 1 1 1)  ; row ix=1 ... image row
+     (set-constraints! layout image-compo 0 1 1 1   ; row ix=1 ... image row
+                       {:insets (new Insets 8 0 8 0)})
      (set-constraints! layout comment-compo 0 2 1 1 ; row ix=2 ... comment row
                        {:weighty 0 :paddingy 16})   ;
      (.add container title-compo)

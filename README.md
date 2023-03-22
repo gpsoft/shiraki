@@ -5,7 +5,7 @@
 - Show image files in the directory one by one
 - Show comment on each image as well
   - comments are read from `UserComment` entry of Exif meta data
-  - or the comment file
+  - or from the comment file
 - Can be operated by keyboard
 
 ## Screenshot
@@ -55,4 +55,8 @@ The comment file is `.shiraki.edn`. It's written in edn format and placed in the
 - [ ] [mac]Exif情報のメッセージボックスが親ウィンドウに隠れてしまう
   - `setFullScreenWindow`でフルスクリーン化してるせい?
 - [ ] [mac]OS XネイティブのフルスクリーンモードをプログラムでON/OFFする方法は?
-- [ ] 写真の描画速度が少し気になる
+- [ ] 写真の描画速度が少し気になることがある
+  - 写真の縮小処理の影響
+  - テキストを描いてからでないと写真の縮小率が決まらない
+- [ ] 写真が多いほど、最初の表示が遅い
+  - Exifのタイムスタンプでソートする影響?
